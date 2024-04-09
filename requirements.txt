@@ -1,6 +1,5 @@
 streamlit==1.24.1
 yfinance==0.1.55
 prophet==1.1.1
-pystan==2.21.1
 plotly==5.18.0
 
