@@ -1,4 +1,6 @@
-# pip install streamlit fbprophet yfinance plotly
+# Install necessary packages
+# !pip install streamlit prophet yfinance plotly
+
 import streamlit as st
 from datetime import date
 
@@ -10,56 +12,56 @@ from plotly import graph_objs as go
 START = "2015-01-01"
 TODAY = date.today().strftime("%Y-%m-%d")
 
-st.title('Stock Forecast App by shivam thakur')
-selected_stock = st.text_input("Enter a stock symbol(for eg. AAPL,MSFT): ").upper()
+st.title('Stock Forecast App by Shivam Thakur')
 
-n_years = st.slider('Years of prediction:', 1, 4)
-period = n_years * 365
+selected_stock = st.text_input("Enter a stock symbol (e.g., AAPL, MSFT): ").upper()
 
+if selected_stock:
+    n_years = st.slider('Years of prediction:', 1, 4)
+    period = n_years * 365
 
-@st.cache
-def load_data(ticker):
-    data = yf.download(ticker, START, TODAY)
-    data.reset_index(inplace=True)
-    return data
+    @st.cache_data
+    def load_data(ticker):
+        data = yf.download(ticker, START, TODAY)
+        data.reset_index(inplace=True)
+        return data
 
+    data_load_state = st.text('Loading data...')
+    data = load_data(selected_stock)
+    data_load_state.text('Loading data... done!')
 
-data_load_state = st.text('Loading data...')
-data = load_data(selected_stock)
-data_load_state.text('Loading data... done!')
+    st.subheader('Raw data')
+    st.write(data.tail())
 
-st.subheader('Raw data')
-st.write(data.tail())
+    # Plot raw data
+    def plot_raw_data():
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], name="stock_open"))
+        fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], name="stock_close"))
+        fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
+        st.plotly_chart(fig)
 
+    plot_raw_data()
 
-# Plot raw data
-def plot_raw_data():
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Open'], name="stock_open"))
-    fig.add_trace(go.Scatter(x=data['Date'], y=data['Close'], name="stock_close"))
-    fig.layout.update(title_text='Time Series data with Rangeslider', xaxis_rangeslider_visible=True)
-    st.plotly_chart(fig)
+    # Predict forecast with Prophet.
+    df_train = data[['Date', 'Close']]
+    df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})
 
+    m = Prophet()
+    m.fit(df_train)
+    future = m.make_future_dataframe(periods=period)
+    forecast = m.predict(future)
 
-plot_raw_data()
+    # Show and plot forecast
+    st.subheader('Forecast data')
+    st.write(forecast.tail())
 
-# Predict forecast with Prophet.
-df_train = data[['Date', 'Close']]
-df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})
+    st.write(f'Forecast plot for {n_years} years')
+    fig1 = plot_plotly(m, forecast)
+    st.plotly_chart(fig1)
 
-m = Prophet()
-m.fit(df_train)
-future = m.make_future_dataframe(periods=period)
-forecast = m.predict(future)
-
-# Show and plot forecast
-st.subheader('Forecast data')
-st.write(forecast.tail())
-
-st.write(f'Forecast plot for {n_years} years')
-fig1 = plot_plotly(m, forecast)
-st.plotly_chart(fig1)
-
-st.write("Forecast components")
-fig2 = m.plot_components(forecast)
-st.write(fig2)
+    st.write("Forecast components")
+    fig2 = m.plot_components(forecast)
+    st.write(fig2)
+else:
+    st.write("Please enter a stock symbol to get started.")
