@@ -1,19 +1,18 @@
-# Install necessary packages
-# !pip install streamlit prophet yfinance plotly
-
 import streamlit as st
 from datetime import date
-
 import yfinance as yf
 from prophet import Prophet
 from prophet.plot import plot_plotly
 from plotly import graph_objs as go
 
+# Define start date for stock data and today's date
 START = "2015-01-01"
 TODAY = date.today().strftime("%Y-%m-%d")
 
+# Title of the Streamlit app
 st.title('Stock Forecast App by Shivam Thakur')
 
+# Input for stock symbol
 selected_stock = st.text_input("Enter a stock symbol (e.g., AAPL, MSFT): ").upper()
 
 if selected_stock:
@@ -43,10 +42,11 @@ if selected_stock:
 
     plot_raw_data()
 
-    # Predict forecast with Prophet.
+    # Prepare data for Prophet model
     df_train = data[['Date', 'Close']]
     df_train = df_train.rename(columns={"Date": "ds", "Close": "y"})
 
+    # Fit Prophet model
     m = Prophet()
     m.fit(df_train)
     future = m.make_future_dataframe(periods=period)
